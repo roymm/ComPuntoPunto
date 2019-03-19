@@ -7,6 +7,7 @@
 
 #define BUFF_SIZE 256
 #define DEFAULT_STRINGS 32
+#define NUMBER_SIZE 8
 #define TRUE 1
 #define FALSE !TRUE
 
@@ -21,7 +22,7 @@ int main(){
 	int last_size_read = 0;	//numero de la ultima respuesta obtenida del contador
 	int cur = 0;
 	int current_string = 0;	//contador de hileras
-	char counter_answer[8]; //buffer temporal para almacenar la cantidad de palabras, de maximo 7 digitos
+	char counter_answer[NUMBER_SIZE]; //buffer temporal para almacenar la cantidad de palabras, de maximo 7 digitos
 	bool answered = TRUE;
 	bool finished = FALSE;
 	int last_sent_string = 0;
@@ -48,7 +49,7 @@ int main(){
 			} 
 			counter_answer[read] = '\0';
 			sizes[last_size_read++] = atoi(counter_answer); //almacena la respuesta
-			memset(counter_answer, '\0', 8);			//limpia la cadena del numero
+			memset(counter_answer, '\0', NUMBER_SIZE);			//limpia la cadena del numero
 			ftruncate(fileno(fcount), 0);	//borra el archivo
 			rewind(fcount);					//se coloca al inicio
 			fprintf(fcount, "0");			//le imprime un 0 para indicar que no hay mas respuesta
@@ -66,6 +67,7 @@ int main(){
 		else{
 			string_buffer[current_string++] = strdup(buffer);	//almacena la cadena en el arreglo de cadenas
 		}
+		//si el contador ya respondio la ultima peticion, puede proceder a enviar otra
 		if(answered){
 			while(!fi){	//se abre o se crea el archivo comunicador de hileras
 				fi = fopen("comm_strings.txt", "w");
