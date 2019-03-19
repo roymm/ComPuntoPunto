@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
+//#include <.h>
 #include <unistd.h> //ftruncate
 
 #define BUFF_SIZE 256
@@ -66,12 +67,15 @@ int main(){
 			} else {
 				//printf("%s -> %d\n", buffer, count);
 				if(!foutput)
-					foutput = fopen("comm_sizes.txt", "w");
+					foutput = fopen("comm_sizes.txt", "w+");
 				//introducir retardo de 5 segundos aqui
+				sleep(5);
 				assert(foutput);
+		
 				fputc('1', foutput);	//le indica al lector que ya hay respuesta
-				fprintf(foutput, "%d", count);	//escribe la respuesta en el comunicador de sizes
+				fprintf(foutput, "%d\n", count);	//escribe la respuesta en el comunicador de sizes
 				fclose(foutput); 
+				foutput = NULL;
 			}
 			ftruncate(fileno(finput), 0);	//borra el archivo
 			rewind(finput);					//se coloca al inicio
