@@ -1,10 +1,10 @@
 #include <assert.h>
 #include <stdio.h>
-//#include <.h>
 #include <unistd.h> //ftruncate
 
 #define BUFF_SIZE 256
 #define SEPARATORS_NUM 10
+#define TIMEOUT 5
 #define TRUE 1
 #define FALSE !TRUE
 
@@ -65,21 +65,15 @@ int main(){
 			if(count == -1){
 				printf("ERROR! La frase tiene caracteres no reconocidos\n");
 			} else {
-				//printf("%s -> %d\n", buffer, count);
 				if(!foutput)
 					foutput = fopen("comm_sizes.txt", "w+");
-				//introducir retardo de 5 segundos aqui
-				sleep(5);
-				assert(foutput);
 		
 				fputc('1', foutput);	//le indica al lector que ya hay respuesta
 				fprintf(foutput, "%d\n", count);	//escribe la respuesta en el comunicador de sizes
 				fclose(foutput); 
 				foutput = NULL;
+				sleep(TIMEOUT);		//delay de 5 segundos
 			}
-			ftruncate(fileno(finput), 0);	//borra el archivo
-			rewind(finput);					//se coloca al inicio
-			fprintf(finput, "0");			//le imprime un 0
 		} 
 		if(finput)
 			fclose(finput);
