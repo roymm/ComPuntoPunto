@@ -90,13 +90,15 @@ if validate_ip_address(user_ip_address) and validate_port(user_port):
 	open_socket.send(str('Connection established with ' + str(user_ip_address) + ' in port ' + str(user_port)).encode())
 	received_message = open_socket.recv(1024)
 	print('Received from the server: ' + received_message.decode())
-	open_socket.close()
 else:
 	print('We can NOT start communication!')
 
-while(True):
+string = ""
+while(string != "1"):
 	string = input('> ')
 	if validate_sentence(string):
-		print("yeah")
+		open_socket.send(str(string).encode())
 	else:
 		print("nah")
+
+open_socket.close()

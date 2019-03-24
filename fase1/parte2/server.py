@@ -1,4 +1,17 @@
 from socket import *
+from collections import deque
+from threading import *
+
+lines_recived = deque()
+
+def recive_message():
+	message = ""
+	while(True):
+		message = (open_socket.recv(1024)).decode()
+		lines_recived.append(message)
+		print('Received from the client: ' + message)
+		print('Cosas en cola: ' + lines_recived.popleft())
+		
 
 # Function that reads in the port entered by the user, in command prompt.
 def read_port():
@@ -6,7 +19,7 @@ def read_port():
 	return port
 
 # Function that returns true if port_number is valid, false otherwise.
-# A valid port must be an integer in range [1024, 65535].
+# A valid port must be an integer in range [1024, 65535].	
 def validate_port(port_number):
 	try:
 		int(port_number)
@@ -37,8 +50,9 @@ user_port = read_port()
 if validate_port(user_port):
 	print('Server can start communication!')
 	client_information = connect_to_client(user_port)
-	open_socket, client_address = client_information[0], client_information[1]
-	received_message = open_socket.recv(1024)
-	print('Received from the client: ' + received_message.decode())
+	global open_socket 
+	open_socket = client_information[0]
+	client_address = client_information[1]
+	t = Thread(target=recive_message, args=())
+	t.start()
 	open_socket.send(str('Connection established with ' + str(client_address)).encode())
-	open_socket.close()
