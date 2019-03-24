@@ -1,6 +1,10 @@
 from server import validate_port
 from server import read_port
 
+def print_dict():
+	for pair in word_counts.items():
+		print(pair[0] + " -> " + pair[1])
+
 def get_sentence():
 	sentence = input("> ")
 	if validate_sentence(sentence):
