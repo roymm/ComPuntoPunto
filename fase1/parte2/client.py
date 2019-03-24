@@ -20,6 +20,27 @@ def validate_port(port_number):
 		return False
 		
 # Function that reads in the IP address entered by the user, in command prompt.
+
+def print_dict():
+	for pair in word_counts.items():
+		print(pair[0] + " -> " + pair[1])
+
+def get_sentence():
+	sentence = input("> ")
+	if validate_sentence(sentence):
+		word_counts[sentence] = -1 #word_counts is a dictionary defined elsewhere
+	else:
+		print("The sentence contains an illegal character!")
+
+def validate_sentence(sentence):
+	valid_seps= [' ', '.', ',', ':', '!', '?', ';', '\t']
+	valid = True
+	for c in sentence:
+		if not c.isalnum():
+			if c not in valid_seps:
+				valid = False
+	return valid
+
 def read_ip_address():
 	ip_address = str(input('Enter the server IP adress: '))
 	return ip_address
@@ -72,3 +93,10 @@ if validate_ip_address(user_ip_address) and validate_port(user_port):
 	open_socket.close()
 else:
 	print('We can NOT start communication!')
+
+while(True):
+	string = input('> ')
+	if validate_sentence(string):
+		print("yeah")
+	else:
+		print("nah")
