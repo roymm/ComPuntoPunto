@@ -10,7 +10,6 @@ def recive_message():
 		message = (open_socket.recv(1024)).decode()
 		lines_recived.append(message)
 		print('Received from the client: ' + message)
-		print('Cosas en cola: ' + lines_recived.popleft())
 		
 
 # Function that reads in the port entered by the user, in command prompt.
@@ -53,6 +52,8 @@ if validate_port(user_port):
 	global open_socket 
 	open_socket = client_information[0]
 	client_address = client_information[1]
+	print('Received from the client: ' + open_socket.recv(1024).decode())
+	open_socket.send(str('Connection established with ' + str(client_address)).encode())
 	t = Thread(target=recive_message, args=())
 	t.start()
-	open_socket.send(str('Connection established with ' + str(client_address)).encode())
+	
