@@ -32,7 +32,7 @@ def receive_message():
 		if message == "-1":
 			strings_finished = True
 			open_socket.send(str("Please wait until server processes all the queries!").encode())
-			break;
+			break
 
 # Function that reads in the port entered by the user, in command prompt.
 def read_port():
@@ -95,13 +95,22 @@ def connect_to_client(port_number):
 	return (connection_socket, client_address)
 	
 # Temporal function to count words in a sentence, doesn't work as it is supposed to.	
-def count_words(sentence, maxsplit = 0):
-	delimiters = [' ', '.', ',', ':', '!', '?', ';', '\t']
-	if sentence:
-		regexPattern = '|'.join(map(re.escape, delimiters))
-		split_sentence = re.split(regexPattern, sentence, maxsplit)
-		return len(split_sentence)
-		
+def count_words(sentence):
+	count = 0
+	in_word = False
+
+	for current_char in sentence:
+		if current_char.isdigit() or current_char.isalpha():
+			if not in_word:
+				in_word = True
+				count += 1
+
+		else:
+			in_word = False
+
+	return count
+
+
 # Function that takes the queued received messages, counts the words of each one and then stores the results in an 2-tuple queue, to be
 # sent to the client by another thread.
 def operate_sentences(IP_address, port_number):
