@@ -1,8 +1,16 @@
 from socket import *
+from threading import *
+import sys
+
+global open_socket
 
 # Function that reads in the port entered by the user, in command prompt.
 def read_port():
-	port = int(input('Enter the port number: '))
+	try:
+		port = int(input('Enter the port number: '))
+	except Exception as error:
+		print(error)
+		return 0
 	return port
 
 # Function that returns true if port_number is valid, false otherwise.
@@ -19,8 +27,6 @@ def validate_port(port_number):
 	else:
 		return False
 		
-# Function that reads in the IP address entered by the user, in command prompt.
-
 def print_dict():
 	for pair in word_counts.items():
 		print(pair[0] + " -> " + pair[1])
@@ -41,6 +47,7 @@ def validate_sentence(sentence):
 				valid = False
 	return valid
 
+# Function that reads in the IP address entered by the user, in command prompt.
 def read_ip_address():
 	ip_address = str(input('Enter the server IP adress: '))
 	return ip_address
@@ -78,6 +85,14 @@ def connect_to_server(ip_address, port_number):
 		return 0
 	return client_socket
 	
+def receive_answers():
+	while True:
+		answer = (open_socket.recv(1024)).decode()
+		if '-1' in answer:
+			break
+		else:
+			print('Received from server: ' + answer)
+	
 	
 # Code for testing the above functions
 
@@ -85,20 +100,31 @@ user_ip_address = read_ip_address()
 user_port = read_port()
 
 if validate_ip_address(user_ip_address) and validate_port(user_port):
-	print('Client can start communication!')
-	open_socket = connect_to_server(user_ip_address, user_port)
+	print('Connecting with ' + str(user_ip_address) + ' through port ' + str(user_port))
+	try:
+		open_socket = connect_to_server(user_ip_address, user_port)
+	except Exception as error:
+		print(error)
+		sys.exit()
 	open_socket.send(str('Connection established with ' + str(user_ip_address) + ' in port ' + str(user_port)).encode())
 	received_message = open_socket.recv(1024)
 	print('Received from the server: ' + received_message.decode())
+	string = ""
+	thread_0 = Thread(target = receive_answers, args = ())
+	thread_0.start()
+	while(True):
+		string = input('> ')
+		if string != "1":
+			if validate_sentence(string):
+				open_socket.send(str(string).encode())
+			else:
+				print("The sentence contains an invalid character!")
+		else:
+			open_socket.send(str('-1').encode())
+			break
+	thread_0.join()
+	open_socket.close()
+
 else:
-	print('We can NOT start communication!')
+	print('IP address or port are wrong!')
 
-string = ""
-while(string != "1"):
-	string = input('> ')
-	if validate_sentence(string):
-		open_socket.send(str(string).encode())
-	else:
-		print("nah")
-
-open_socket.close()

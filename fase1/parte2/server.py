@@ -1,16 +1,28 @@
 from socket import *
 from collections import deque
 from threading import *
+import re
+import time
+import sys
 
-lines_recived = deque()
+global open_socket
+global strings_finished
+lines_received = deque()
+sent_lines = deque()
 
-def recive_message():
+
+# Function that receives messages from the client, and stops when receives a -1 value. Also enqueues the received messages in a global
+# double-ended queue named 'lines_received'.
+def receive_message():
 	message = ""
 	while(True):
 		message = (open_socket.recv(1024)).decode()
-		lines_recived.append(message)
-		print('Received from the client: ' + message)
+		lines_received.append(message)
+		print('Received from client: ' + message)
 		
+		if message == "-1":
+			strings_finished = True
+			break;
 
 # Function that reads in the port entered by the user, in command prompt.
 def read_port():
@@ -44,16 +56,72 @@ def connect_to_client(port_number):
 		return 0
 	return (connection_socket, client_address)
 	
+# Temporal function to count words in a sentence, doesn't work as it is supposed to.	
+def count_words(sentence, maxsplit = 0):
+	delimiters = [' ', '.', ',', ':', '!', '?', ';', '\t']
+	if sentence:
+		regexPattern = '|'.join(map(re.escape, delimiters))
+		split_sentence = re.split(regexPattern, sentence, maxsplit)
+		return len(split_sentence)
+		
+# Function that takes the received messages queued, counts the words of each one and then stores the results in a dictionary.
+def operate_sentences():
+	while '-1' not in lines_received or not strings_finished:
+		if lines_received:
+			current_sentence = lines_received.pop()
+			if current_sentence != '-1':
+				sentence_length = count_words(current_sentence)
+				sent_lines.append((current_sentence, sentence_length))
+			else:
+				sent_lines.append(('-1', '-1'))
+				break
+			#print(current_sentence + ' -> ' + str(sentence_length))
+			
+# Function executed by a specific thread to send answers to the client within a given delay time.
+def answer_to_client(delay, none):
+	while True:
+		if sent_lines:
+			sending_message = sent_lines.pop()
+			time.sleep(delay)
+			if '-1' in sending_message:
+				open_socket.send(str(sending_message).encode())
+				break
+			else:
+				open_socket.send(str(sending_message).encode())	
+
 # Code for testing purposes
+
 user_port = read_port()
 if validate_port(user_port):
+	delay = 0
+	try:
+		delay = int(input('Enter the delay time in seconds: '))
+	except Exception as error:
+		print('You entered a wrong value!')
+		sys.exit()
+	strings_finished = False
 	print('Server can start communication!')
-	client_information = connect_to_client(user_port)
-	global open_socket 
+	try:
+		client_information = connect_to_client(user_port)
+	except Exception as error:
+		print(error)
+		sys.exit()
 	open_socket = client_information[0]
 	client_address = client_information[1]
 	print('Received from the client: ' + open_socket.recv(1024).decode())
 	open_socket.send(str('Connection established with ' + str(client_address)).encode())
-	t = Thread(target=recive_message, args=())
-	t.start()
+	thread_0 = Thread(target=receive_message, args=())
+	thread_0.start()
+	thread_1 = Thread(target = operate_sentences, args = ())
+	thread_1.start()
+	thread_2 = Thread(target = answer_to_client, args = (delay, 0))
+	thread_2.start()
+	
+	thread_0.join()
+	thread_1.join()
+	thread_2.join()
+	open_socket.close()
+	print('Connection with ' + str(client_address) + ' has been closed successfully!')
+else:
+	print('Wrong port!')
 	
