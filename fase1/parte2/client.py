@@ -3,6 +3,7 @@ from threading import *
 import sys
 
 global open_socket
+global ans_list
 
 # Function that reads in the port entered by the user, in command prompt.
 def read_port():
@@ -82,49 +83,51 @@ def connect_to_server(ip_address, port_number):
 		client_socket.connect((ip_address, port_number))
 	except Exception as error:
 		print(error)
-		return 0
+		return -1
 	return client_socket
 
 # Function that often blocks waiting for server's responses, until server tells it there are no more answers, with a -1 value.	
 def receive_answers():
 	while True:
-		answer = (open_socket.recv(1024)).decode()
-		if '-1' in answer:
-			break
+		answer = open_socket.recv(1024)
+		if len(answer) > 0:
+			ans_list.append(answer.decode())
 		else:
-			print('Received from server: ' + answer)
+			break
 	
 	
 # Code for testing the above functions (main)
 
 user_ip_address = read_ip_address()
 user_port = read_port()
-
+ans_list = []
 if validate_ip_address(user_ip_address) and validate_port(user_port):
+	open_socket = connect_to_server(user_ip_address, user_port)
+	if open_socket == -1:
+		sys.exit(-1)
 	print('Connection established with ' + str(user_ip_address) + ' through port ' + str(user_port))
-	try:
-		open_socket = connect_to_server(user_ip_address, user_port)
-	except Exception as error:
-		print(error)
-		sys.exit()
-	received_message = open_socket.recv(1024)
-	print('Received from the server: ' + received_message.decode())
 	string = ""
 	thread_0 = Thread(target = receive_answers, args = ())
 	thread_0.start()
-	
 	# The main execution thread reads in the user input.
 	while(True):
-		string = input('> ')
+		try:
+			string = input('> ')
+		except EOFError:
+			print("exiting...")
+			open_socket.shutdown(SHUT_RDWR)
+			open_socket.close()
+			print("socket closed")
+			break
 		if string != "1":
 			if validate_sentence(string):
 				open_socket.send(str(string).encode())
 			else:
 				print("The sentence contains an invalid character!")
 		else:
-			open_socket.send(str('-1').encode())
-			break
+			for ans in ans_list:
+				print(ans)
+	print("waiting on thread")
 	thread_0.join()
-	open_socket.close()
 else:
 	print('IP address or port are wrong!')
