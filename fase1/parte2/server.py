@@ -61,7 +61,7 @@ def validate_ip_address(ip_address):
 		
 		if number < 0 or number > 255:
 			is_valid = False
-	
+
 	return is_valid
 
 # Function that returns a 3-tuple containing an open socket, the client's IP address and the port number.
