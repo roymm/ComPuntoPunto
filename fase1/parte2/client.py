@@ -84,7 +84,8 @@ def connect_to_server(ip_address, port_number):
 		print(error)
 		return 0
 	return client_socket
-	
+
+# Function that often blocks waiting for server's responses, until server tells it there are no more answers, with a -1 value.	
 def receive_answers():
 	while True:
 		answer = (open_socket.recv(1024)).decode()
@@ -94,24 +95,25 @@ def receive_answers():
 			print('Received from server: ' + answer)
 	
 	
-# Code for testing the above functions
+# Code for testing the above functions (main)
 
 user_ip_address = read_ip_address()
 user_port = read_port()
 
 if validate_ip_address(user_ip_address) and validate_port(user_port):
-	print('Connecting with ' + str(user_ip_address) + ' through port ' + str(user_port))
+	print('Connection established with ' + str(user_ip_address) + ' through port ' + str(user_port))
 	try:
 		open_socket = connect_to_server(user_ip_address, user_port)
 	except Exception as error:
 		print(error)
 		sys.exit()
-	open_socket.send(str('Connection established with ' + str(user_ip_address) + ' in port ' + str(user_port)).encode())
 	received_message = open_socket.recv(1024)
 	print('Received from the server: ' + received_message.decode())
 	string = ""
 	thread_0 = Thread(target = receive_answers, args = ())
 	thread_0.start()
+	
+	# The main execution thread reads in the user input.
 	while(True):
 		string = input('> ')
 		if string != "1":
@@ -124,7 +126,5 @@ if validate_ip_address(user_ip_address) and validate_port(user_port):
 			break
 	thread_0.join()
 	open_socket.close()
-
 else:
 	print('IP address or port are wrong!')
-
