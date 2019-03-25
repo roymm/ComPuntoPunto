@@ -1,5 +1,4 @@
 from queue import Queue
-
 from threading import Thread
 from socket import *
 import time
@@ -179,27 +178,25 @@ if validate_port(user_port):
 	user_thread.start()
 	threads = []
 
-	while user_thread.is_alive():
-		client_information = connect_to_client(user_port)
-		if client_information[0] == -1:
-			print(error)
-			sys.exit()
-		open_socket = client_information[0]
-		client_address = client_information[1]
-		print(str('Connection established with ' + str(client_address)))
+	client_information = connect_to_client(user_port)
+	if client_information[0] == -1:
+		print(error)
+		sys.exit()
+	open_socket = client_information[0]
+	client_address = client_information[1]
+	print(str('\nConnection established with ' + str(client_address)))
+	threads.append(Thread(target = receive_message, args = ()))
+	threads.append(Thread(target = operate_sentences, args = (client_address[0], client_address[1])))
+	threads.append(Thread(target = answer_to_client, args = [delay]))
+	for thr in threads:
+		thr.start()
 
-		threads.append(Thread(target = receive_message, args = ()))
-		threads.append(Thread(target = operate_sentences, args = (client_address[0], client_address[1])))
-		threads.append(Thread(target = answer_to_client, args = [delay]))
-
-		for thr in threads:
-			thr.start()
-	
-		for thr in threads:
-			thr.join()
-			print("thread closed")
-		threads.clear()
-		print("connection closed!")
+	for thr in threads:
+		thr.join()
+		print("Thread closed")
+	threads.clear()
+	print("Connection closed!")
+	user_thread.join()
 
 else:
 	print('Wrong port!')
