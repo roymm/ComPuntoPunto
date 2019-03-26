@@ -64,13 +64,28 @@ def validate_ip_address(ip_address):
 
 	return is_valid
 
-# Function that returns a 3-tuple containing an open socket, the client's IP address and the port number.
-def connect_to_client(port_number):
+def create_socket(port_number):
 	try:
 		server_socket = socket(AF_INET, SOCK_STREAM)
+	except Exception as error:
+		print(error)
+		return (-1, -1)
+	try:
 		server_socket.bind(('', port_number))
+	except Exception as error:
+		print(error)
+		return (-1, -1)
+	try:
 		server_socket.listen(1)
-		# accept() returns a 3-tuple containing the socket given by the server, the client's IP address and the port number.
+	except Exception as error:
+		print(error)
+		return (-1, -1)
+	return server_socket
+
+# Function that returns a 3-tuple containing an open socket, the client's IP address and the port number.
+def connect_to_client(server_socket):
+	# accept() returns a 3-tuple containing the socket given by the server, the client's IP address and the port number.
+	try:
 		connection_socket, client_address = server_socket.accept()
 	except Exception as error:
 		print(error)
@@ -146,7 +161,7 @@ def receive_message():
 			message = open_socket.recv(1024)
 			if len(message) == 0:
 				lines_received.put("1")
-				open_socket.close()
+				#open_socket.close()
 				break
 			else:
 				lines_received.put(message.decode())
@@ -169,48 +184,51 @@ def answer_to_client(delay):
 # Main
 
 keep_server_alive = True
+
+user_port = read_port()
+delay = 5 #default value
+if validate_port(user_port):
+	try:
+		delay = int(input('Enter the delay time in seconds: '))
+	except ValueError:
+		print("That's not a number!")
+	print('I am ready to answer queries')
+server_socket = create_socket(user_port)
 while keep_server_alive:
-	user_port = read_port()
-	if validate_port(user_port):
-		try:
-			delay = int(input('Enter the delay time in seconds: '))
-		except ValueError:
-			print("That's not a number!")
-			sys.exit()
-		print('I am ready to answer queries')
-	
-		user_thread = Thread(target = wait_input, args = ())
-		user_thread.start()
-		threads = []
-	
-		client_information = connect_to_client(user_port)
-		if client_information[0] == -1:
-			print(error)
-			sys.exit()
-		open_socket = client_information[0]
-		client_address = client_information[1]
-		print(str('\nConnection established with ' + str(client_address)))
-		threads.append(Thread(target = receive_message, args = ()))
-		threads.append(Thread(target = operate_sentences, args = (client_address[0], client_address[1])))
-		threads.append(Thread(target = answer_to_client, args = [delay]))
-		for thr in threads:
-			thr.start()
-	
-		for thr in threads:
-			thr.join()
-			print("Thread closed")
-		threads.clear()
-		print("Connection closed!")
-		user_thread.join()
-		user_response = ''
-		try:
-			user_response = str(input("Press 'y' to keep server going, or any other key to exit: "))
-		except Exception as error:
-			print(error)
-		if user_response == 'y':
-			keep_server_alive = True
-		else:
-			keep_server_alive = False
-	
+	#user_thread = Thread(target = wait_input, args = ())
+	#user_thread.start()
+	threads = []
+
+	client_information = connect_to_client(server_socket)
+	if client_information[0] == -1:
+		print(error)
+		sys.exit()
+	open_socket = client_information[0]
+	client_address = client_information[1]
+	print(str('\nConnection established with ' + str(client_address)))
+	threads.append(Thread(target = receive_message, args = ()))
+	threads.append(Thread(target = operate_sentences, args = (client_address[0], client_address[1])))
+	threads.append(Thread(target = answer_to_client, args = [delay]))
+	for thr in threads:
+		thr.start()
+
+	wait_input()
+
+	for thr in threads:
+		thr.join()
+		print("Thread closed")
+	threads.clear()
+	print("Connection closed!")
+	#user_thread.join()
+	user_response = ''
+	try:
+		user_response = str(input("Press 'y' to keep server going, or any other key to exit: "))
+	except Exception as error:
+		print(error)
+	if user_response == 'y':
+		keep_server_alive = True
 	else:
-		print('Wrong port!')
+		keep_server_alive = False
+
+else:
+	print('Wrong port!')
