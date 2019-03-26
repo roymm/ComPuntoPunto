@@ -2,7 +2,10 @@ from socket import *
 from threading import *
 import sys
 
+# Communication socket between client and server, used concurrently by various execution threads.
 global open_socket
+
+# List to store the answers received from the server.
 global ans_list
 
 # Function that reads in the port entered by the user, in command prompt.
@@ -28,10 +31,12 @@ def validate_port(port_number):
 	else:
 		return False
 		
+# Function that prints all the pairs of the form (sentence -> word_count).
 def print_dict():
 	for pair in word_counts.items():
 		print(pair[0] + " -> " + pair[1])
 
+# Function that reads in the sentences entered by the user, executed by a dedicated thread.
 def get_sentence():
 	sentence = input("> ")
 	if validate_sentence(sentence):
@@ -39,6 +44,7 @@ def get_sentence():
 	else:
 		print("The sentence contains an illegal character!")
 
+# Funcion that validates a sentence, according to our definition of 'valid characters'.
 def validate_sentence(sentence):
 	valid_seps= [' ', '.', ',', ':', '!', '?', ';', '\t']
 	valid = True
@@ -93,10 +99,9 @@ def receive_answers():
 		if len(answer) > 0:
 			ans_list.append(answer.decode())
 		else:
-			break
+			break	
 	
-	
-# Code for testing the above functions (main)
+# Main
 
 user_ip_address = read_ip_address()
 user_port = read_port()
@@ -117,7 +122,7 @@ if validate_ip_address(user_ip_address) and validate_port(user_port):
 			print("exiting...")
 			open_socket.shutdown(SHUT_RDWR)
 			open_socket.close()
-			print("socket closed")
+			print("Socket closed")
 			break
 		if string != "1":
 			if validate_sentence(string):
@@ -127,7 +132,7 @@ if validate_ip_address(user_ip_address) and validate_port(user_port):
 		else:
 			for ans in ans_list:
 				print(ans)
-	print("waiting on thread")
+	print("Waiting on thread")
 	thread_0.join()
 else:
 	print('IP address or port are wrong!')

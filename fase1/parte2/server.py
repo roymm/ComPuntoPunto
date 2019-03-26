@@ -77,7 +77,7 @@ def connect_to_client(port_number):
 		return (-1, -1)
 	return (connection_socket, client_address)
 
-# Temporal function to count words in a sentence, doesn't work as it is supposed to.	
+# Function to count words in a sentence, with the separators lined in the documentation.	
 def count_words(sentence):
 	count = 0
 	in_word = False
@@ -142,13 +142,16 @@ def wait_input():
 # double-ended queue named 'lines_received'.
 def receive_message():
 	while(True):
-		message = open_socket.recv(1024)
-		if len(message) == 0:
-			lines_received.put("1")
-			open_socket.close()
-			break
+		if open_socket:
+			message = open_socket.recv(1024)
+			if len(message) == 0:
+				lines_received.put("1")
+				open_socket.close()
+				break
+			else:
+				lines_received.put(message.decode())
 		else:
-			lines_received.put(message.decode())
+			break
 
 # Function executed by a specific thread to send answers to the client within a given delay time.
 def answer_to_client(delay):
@@ -162,41 +165,52 @@ def answer_to_client(delay):
 				break
 		else:
 			break
+		
+# Main
 
-# Code for testing purposes (main)
-
-user_port = read_port()
-if validate_port(user_port):
-	try:
-		delay = int(input('Enter the delay time in seconds: '))
-	except ValueError:
-		print("That's not a number!")
-		sys.exit()
-	print('I am ready to answer queries')
-
-	user_thread = Thread(target = wait_input, args = ())
-	user_thread.start()
-	threads = []
-
-	client_information = connect_to_client(user_port)
-	if client_information[0] == -1:
-		print(error)
-		sys.exit()
-	open_socket = client_information[0]
-	client_address = client_information[1]
-	print(str('\nConnection established with ' + str(client_address)))
-	threads.append(Thread(target = receive_message, args = ()))
-	threads.append(Thread(target = operate_sentences, args = (client_address[0], client_address[1])))
-	threads.append(Thread(target = answer_to_client, args = [delay]))
-	for thr in threads:
-		thr.start()
-
-	for thr in threads:
-		thr.join()
-		print("Thread closed")
-	threads.clear()
-	print("Connection closed!")
-	user_thread.join()
-
-else:
-	print('Wrong port!')
+keep_server_alive = True
+while keep_server_alive:
+	user_port = read_port()
+	if validate_port(user_port):
+		try:
+			delay = int(input('Enter the delay time in seconds: '))
+		except ValueError:
+			print("That's not a number!")
+			sys.exit()
+		print('I am ready to answer queries')
+	
+		user_thread = Thread(target = wait_input, args = ())
+		user_thread.start()
+		threads = []
+	
+		client_information = connect_to_client(user_port)
+		if client_information[0] == -1:
+			print(error)
+			sys.exit()
+		open_socket = client_information[0]
+		client_address = client_information[1]
+		print(str('\nConnection established with ' + str(client_address)))
+		threads.append(Thread(target = receive_message, args = ()))
+		threads.append(Thread(target = operate_sentences, args = (client_address[0], client_address[1])))
+		threads.append(Thread(target = answer_to_client, args = [delay]))
+		for thr in threads:
+			thr.start()
+	
+		for thr in threads:
+			thr.join()
+			print("Thread closed")
+		threads.clear()
+		print("Connection closed!")
+		user_thread.join()
+		user_response = ''
+		try:
+			user_response = str(input("Press 'y' to keep server going, or any other key to exit: "))
+		except Exception as error:
+			print(error)
+		if user_response == 'y':
+			keep_server_alive = True
+		else:
+			keep_server_alive = False
+	
+	else:
+		print('Wrong port!')
