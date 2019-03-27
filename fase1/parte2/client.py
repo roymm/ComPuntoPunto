@@ -96,9 +96,12 @@ def connect_to_server(ip_address, port_number):
 def receive_answers():
 	while True:
 		answer = open_socket.recv(1024)
-		if len(answer) > 0:
+		if len(answer) > 0 and answer.decode() != '1':
 			ans_list.append(answer.decode())
 		else:
+			print(answer.decode())
+			open_socket.shutdown(SHUT_RDWR)
+			open_socket.close()
 			break	
 	
 # Main
@@ -111,7 +114,6 @@ if validate_ip_address(user_ip_address) and validate_port(user_port):
 	if open_socket == -1:
 		sys.exit(-1)
 	print('Connection established with ' + str(user_ip_address) + ' through port ' + str(user_port))
-	string = ""
 	thread_0 = Thread(target = receive_answers, args = ())
 	thread_0.start()
 	# The main execution thread reads in the user input.
@@ -120,13 +122,12 @@ if validate_ip_address(user_ip_address) and validate_port(user_port):
 			string = input('> ')
 		except EOFError:
 			print("exiting...")
-			open_socket.shutdown(SHUT_RDWR)
-			open_socket.close()
-			print("Socket closed")
+			string = "1"
+			open_socket.send(string.encode())
 			break
 		if string != "1":
 			if validate_sentence(string):
-				open_socket.send(str(string).encode())
+				open_socket.send(string.encode())
 			else:
 				print("The sentence contains an invalid character!")
 		else:
