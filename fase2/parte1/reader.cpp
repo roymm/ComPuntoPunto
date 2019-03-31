@@ -9,9 +9,10 @@
 #include <errno.h>
 
 /*
-* Falta hacer una despedida entre los contratistas y el emisor
+* Falta hacer una despedida entre los contratistas y el emisor (con memoria compartida?)
 * '->Falta avisar cuando se termina de escribir el archivo enviado
 * Hay que cambiar el contratista para que vaya leyendo del archivo (hasta 1280 bytes) mientras lo va enviando (tal vez con threads?)
+* Para salirse limpiamente: usar memoria compartida
 */
 
 
@@ -58,7 +59,7 @@ int main(int argc, char * argv[]){
 	while(entry = readdir(dir)){
 		if(entry->d_type == DT_REG|DT_UNKNOWN && entry->d_name[0] != '.'){
 			my_sem.wait();
-			if(fork()){
+			if(!fork()){
 				strcat(relative_path, (const char *) entry->d_name);
 				contractor((const char *) relative_path, &my_sem);
 			}
