@@ -17,14 +17,14 @@ Message::Message(key_t key){
 }
 
 Message::~Message(){
-/*
+
 	if(getpid() == pid){
 		int st = msgctl(id, IPC_RMID, nullptr);
 		if(-1 == st){
 			error_exit(errno, "Error deleting message queue\n");
 		}
 	}
-*/
+
 }
 
 void Message::send(struct my_msgbuf * buf){

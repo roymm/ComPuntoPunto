@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <cstdlib>
+#include <string.h>
+#include <stdio.h>
 
 Semaphore::Semaphore(key_t key, int v){
 	id = semget(key, 1, IPC_CREAT|0600);
@@ -25,7 +27,10 @@ Semaphore::~Semaphore(){
 	if(getpid() == pid){
 		int st = semctl(id, 1, IPC_RMID);
 		if(-1 == st){
-			error_exit(errno, "Error deleting the semaphore\n");	
+			char error_msg[128];
+			memset((void*) error_msg, '\0', 128); 
+			sprintf(error_msg, "Error deleting the semaphore with id %d\n", id);
+			error_exit(errno, error_msg);	
 		}
 	}
 }
@@ -48,6 +53,9 @@ void Semaphore::signal(){
 	z.sem_flg = 0;
 	int st = semop(id, &z, 1);
 	if(-1 == st){
-		error_exit(errno, "Error signaling the semaphore\n");	
+		char error_msg[128];
+		memset((void*) error_msg, '\0', 128); 
+		sprintf(error_msg, "Error signaling the semaphore with id %d\n", id);
+		error_exit(errno, error_msg);		
 	}
 }
