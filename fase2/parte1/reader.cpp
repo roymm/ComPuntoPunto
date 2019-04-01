@@ -17,7 +17,7 @@
 * Para salirse limpiamente: usar memoria compartida
 */
 
- int Size = 512;
+#define SIZE 512
 void contractor(const char * filename, Semaphore * my_sem){
 	Message my_msgq;
 	SharedMem shared_mem(DEFAULT_SIZE, KEY_SEB);
@@ -41,27 +41,32 @@ void contractor(const char * filename, Semaphore * my_sem){
 	my_msgq.send(&buf);
 
 	int read_result;
-	char aux[Size];
+	int bytes_to_write;
+	char aux[SIZE];
 	do{
-		read_result = fread((void *) aux, 1, Size , source);
-		for(int i=0; i<read_result; i++){
+		read_result = fread((void *) aux, 1, SIZE, source);
+		bytes_to_write = 0;
+		for(int i=0; i<=read_result; i++){
 			if((i%128)==0 && i!=0){
-			buf.mtype = pid;
-			buf.piece_number = ++current_piece;
-			buf.bytes = read_result;
-			my_msgq.send(&buf);
+				buf.mtype = pid;
+				buf.piece_number = ++current_piece;
+				buf.bytes = bytes_to_write;
+				my_msgq.send(&buf);
+				bytes_to_write = 0;
+				break;
 			}
-		buf.mtext[i%128] = aux[i];
+			bytes_to_write++;
+			buf.mtext[i%128] = aux[i];
 		}	
-		if(read_result < Size){
+		if(bytes_to_write > 0){
 			buf.mtype = pid;
 			buf.piece_number = ++current_piece;
-			buf.bytes = read_result;
+			buf.bytes = bytes_left;
 			my_msgq.send(&buf);	
 		}
 		buf.mtype = pid;
 		buf.piece_number = ++current_piece;
-		buf.bytes = read_result;
+		buf.bytes = 0;
 		my_msgq.send(&buf);	
 		
 	} while(read_result);
