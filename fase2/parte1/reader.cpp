@@ -17,7 +17,7 @@
 * Para salirse limpiamente: usar memoria compartida
 */
 
-
+ int Size = 512;
 void contractor(const char * filename, Semaphore * my_sem){
 	Message my_msgq;
 	SharedMem shared_mem(DEFAULT_SIZE, KEY_SEB);
@@ -41,13 +41,29 @@ void contractor(const char * filename, Semaphore * my_sem){
 	my_msgq.send(&buf);
 
 	int read_result;
-
+	char aux[Size];
 	do{
-		read_result = fread((void *) buf.mtext, 1, MSGSIZE, source);
+		read_result = fread((void *) aux, 1, Size , source);
+		for(int i=0; i<read_result; i++){
+			if((i%128)==0 && i!=0){
+			buf.mtype = pid;
+			buf.piece_number = ++current_piece;
+			buf.bytes = read_result;
+			my_msgq.send(&buf);
+			}
+		buf.mtext[i%128] = aux[i];
+		}	
+		if(read_result < Size){
+			buf.mtype = pid;
+			buf.piece_number = ++current_piece;
+			buf.bytes = read_result;
+			my_msgq.send(&buf);	
+		}
 		buf.mtype = pid;
 		buf.piece_number = ++current_piece;
 		buf.bytes = read_result;
-		my_msgq.send(&buf);
+		my_msgq.send(&buf);	
+		
 	} while(read_result);
 
 	fclose(source);
