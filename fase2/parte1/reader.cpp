@@ -11,13 +11,8 @@
 #include <sys/wait.h>
 
 #define MAX_PROCESSES 2
-
-/*
-* Hay que cambiar el contratista para que vaya leyendo del archivo (hasta 1280 bytes) mientras lo va enviando (tal vez con threads?)
-* Para salirse limpiamente: usar memoria compartida
-*/
-
 #define SIZE 512
+
 void contractor(const char * filename, Semaphore * my_sem){
 	Message my_msgq;
 	SharedMem shared_mem(DEFAULT_SIZE, KEY_SEB);
@@ -41,35 +36,35 @@ void contractor(const char * filename, Semaphore * my_sem){
 	my_msgq.send(&buf);
 
 	int read_result;
-	int bytes_to_write;
+	int full_groups;
+	int remainder_bytes;
 	char aux[SIZE];
 	do{
 		read_result = fread((void *) aux, 1, SIZE, source);
-		bytes_to_write = 0;
-		for(int i=0; i<=read_result; i++){
-			if((i%128)==0 && i!=0){
-				buf.mtype = pid;
-				buf.piece_number = ++current_piece;
-				buf.bytes = bytes_to_write;
-				my_msgq.send(&buf);
-				bytes_to_write = 0;
-				break;
-			}
-			bytes_to_write++;
-			buf.mtext[i%128] = aux[i];
-		}	
-		if(bytes_to_write > 0){
+		full_groups = read_result/MSG_SIZE;
+		remainder_bytes = read_result%MSG_SIZE;
+
+		for(int i = 0; i < full_groups; ++i){
+			memcpy((void *) buf.mtext, (void *) (aux + i*MSG_SIZE), MSG_SIZE);
 			buf.mtype = pid;
 			buf.piece_number = ++current_piece;
-			buf.bytes = bytes_left;
-			my_msgq.send(&buf);	
+			buf.bytes = MSG_SIZE;
+			my_msgq.send(&buf);
 		}
-		buf.mtype = pid;
-		buf.piece_number = ++current_piece;
-		buf.bytes = 0;
-		my_msgq.send(&buf);	
-		
+		if(remainder_bytes > 0){
+			memcpy((void *) buf.mtext, (void *) (aux+full_groups*MSG_SIZE), remainder_bytes);
+			buf.mtype = pid;
+			buf.piece_number = ++current_piece;
+			buf.bytes = remainder_bytes;
+			my_msgq.send(&buf);
+		}
+
 	} while(read_result);
+	buf.mtype = pid;
+	buf.piece_number = ++current_piece;
+	buf.bytes = 0;
+	my_msgq.send(&buf);	
+		
 
 	fclose(source);
 	while(true){
@@ -86,12 +81,15 @@ void contractor(const char * filename, Semaphore * my_sem){
 }
 
 int main(int argc, char * argv[]){
-	if(argc < 2)
-		return printf("Missing arguments!\n"), 1;
+	if(argc < 2){
+		printf("Missing arguments!\n");
+		return 1;
+	}
 	Semaphore my_sem(0xb40703, MAX_PROCESSES);
 	DIR * dir = opendir(argv[1]);
-	if(!dir)
-		return printf("Cannot open directory \"%s\"!\n", argv[1]);
+	if(!dir){
+		exit_error("Cannot open directory");
+	}
 	struct dirent * entry = NULL; 
 	char relative_path[NAME_MAX];
 	strcat(relative_path, argv[1]);
