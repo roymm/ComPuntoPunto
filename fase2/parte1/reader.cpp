@@ -13,23 +13,30 @@
 #define MAX_PROCESSES 2
 #define SIZE 512
 
-void contractor(const char * filename, Semaphore * my_sem){
+void contractor(const char * directory, const char * filename, Semaphore * my_sem){
 	Message my_msgq;
 	SharedMem shared_mem(DEFAULT_SIZE, KEY_SEB);
 	Semaphore messages_sem(KEY_CRIS, 0);
 	long* sender_messages = (long*) shared_mem.attach();
 	memset((void*) sender_messages, 0, DEFAULT_SIZE);
 	struct my_msgbuf buf;
+	char full_path[FILENAME_MAX];
+	strcat(full_path, directory);
+	int i;
+	for(i = 0; full_path[i] != '\0'; ++i);
+	if(full_path[i-1] != '/'){
+		full_path[i] = '/';
+		full_path[i+1] = '\0';
+	}
+	strcat(full_path, filename);
 
-	FILE * source = fopen(filename, "rb");
+	FILE * source = fopen(full_path, "rb");
 	if(source == NULL){
 		error_exit(errno, "Error opening file\n");
 	}
-	long pid = getpid();
-	int current_piece = 0;
 
-	buf.mtype = pid;
-	buf.piece_number = current_piece;
+	buf.mtype = getpid();
+	buf.piece_number = 0;
 	buf.bytes = 0;
 	strcpy(buf.mtext, filename);
 
@@ -41,27 +48,24 @@ void contractor(const char * filename, Semaphore * my_sem){
 	char aux[SIZE];
 	do{
 		read_result = fread((void *) aux, 1, SIZE, source);
-		full_groups = read_result/MSG_SIZE;
-		remainder_bytes = read_result%MSG_SIZE;
+		full_groups = read_result/MSGSIZE;
+		remainder_bytes = read_result%MSGSIZE;
 
 		for(int i = 0; i < full_groups; ++i){
-			memcpy((void *) buf.mtext, (void *) (aux + i*MSG_SIZE), MSG_SIZE);
-			buf.mtype = pid;
-			buf.piece_number = ++current_piece;
-			buf.bytes = MSG_SIZE;
+			memcpy((void *) buf.mtext, (void *) (aux + i*MSGSIZE), MSGSIZE);
+			++buf.piece_number;
+			buf.bytes = MSGSIZE;
 			my_msgq.send(&buf);
 		}
 		if(remainder_bytes > 0){
-			memcpy((void *) buf.mtext, (void *) (aux+full_groups*MSG_SIZE), remainder_bytes);
-			buf.mtype = pid;
-			buf.piece_number = ++current_piece;
+			memcpy((void *) buf.mtext, (void *) (aux+full_groups*MSGSIZE), remainder_bytes);
+			++buf.piece_number;
 			buf.bytes = remainder_bytes;
 			my_msgq.send(&buf);
 		}
 
 	} while(read_result);
-	buf.mtype = pid;
-	buf.piece_number = ++current_piece;
+	++buf.piece_number;
 	buf.bytes = 0;
 	my_msgq.send(&buf);	
 		
@@ -69,8 +73,9 @@ void contractor(const char * filename, Semaphore * my_sem){
 	fclose(source);
 	while(true){
 		messages_sem.wait();
-		if(sender_messages[0] == pid){
-			printf("Contractor with id %ld is going to meet the Lord!\n", pid);
+		if(sender_messages[0] == buf.mtype){
+			printf("Contractor with id %ld is going to meet the Lord!\n", buf.mtype);
+			printf("File: %s has been successfully transfered\n", filename);
 			break;
 		}
 		messages_sem.signal();
@@ -88,19 +93,16 @@ int main(int argc, char * argv[]){
 	Semaphore my_sem(0xb40703, MAX_PROCESSES);
 	DIR * dir = opendir(argv[1]);
 	if(!dir){
-		exit_error("Cannot open directory");
+		error_exit(errno, "Cannot open directory");
 	}
 	struct dirent * entry = NULL; 
-	char relative_path[NAME_MAX];
-	strcat(relative_path, argv[1]);
 	int status = 0;
 	int forked_processes = 0;
 	while((entry = readdir(dir))){
 		if(entry->d_type == (DT_REG|DT_UNKNOWN) && entry->d_name[0] != '.'){
 			my_sem.wait();
 			if(!fork()){
-				strcat(relative_path, (const char *) entry->d_name);
-				contractor((const char *) relative_path, &my_sem);
+				contractor(argv[1], (const char *) entry->d_name, &my_sem);
 			}else{
 				++forked_processes;
 			}
