@@ -93,13 +93,15 @@ int main(int argc, char * argv[]){
 	Semaphore my_sem(0xb40703, MAX_PROCESSES);
 	DIR * dir = opendir(argv[1]);
 	if(!dir){
-		error_exit(errno, "Cannot open directory");
+		error_exit(errno, "ERROR: Cannot open directory");
 	}
 	struct dirent * entry = NULL; 
 	int status = 0;
 	int forked_processes = 0;
+	int number_of_files = 0;
 	while((entry = readdir(dir))){
 		if(entry->d_type == (DT_REG|DT_UNKNOWN) && entry->d_name[0] != '.'){
+			number_of_files++;
 			my_sem.wait();
 			if(!fork()){
 				contractor(argv[1], (const char *) entry->d_name, &my_sem);
@@ -107,6 +109,9 @@ int main(int argc, char * argv[]){
 				++forked_processes;
 			}
 		}
+	}
+	if(number_of_files == 0){
+		printf("ERROR: Path is empty\n");
 	}
 	for(int zombies = 0; zombies < forked_processes; ++zombies)
 		wait(&status);
