@@ -46,7 +46,7 @@ int Socket::Connect(const char * host, int port){
 
 int Socket::Read(char * text, int len){
 	int bytes;
-	if((bytes = read(sfd, text, len)) == -1){
+	if((bytes = recv(sfd, text, len, MSG_WAITALL)) == -1){
 		perror("Error reading!\n");
 	}
 	return bytes;
