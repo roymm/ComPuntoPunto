@@ -18,19 +18,13 @@ int main(int argc, char * argv[]){
 	Socket sock;
 	sock.Connect(argv[1], atoi(argv[2]));
 	printf("success\n");
-	
+	int msg_no = 0;	
+	int result;
 
 	while(true){
 	 	my_msgq.receive(&buf, 0);
-		printf("Received!\n");
-		/*
-		if(buf.piece_number != 0 && buf.bytes == 0){
-			messages_sem.wait();
-			sender_messages[0] = buf.mtype;
-			messages_sem.signal();
+		if((result = sock.Write((const char *) &buf, sizeof(struct my_msgbuf))) == -1){
+			printf("oh no\n");
 		}
-		*/
-		sock.Write((const char *) &buf, sizeof(struct my_msgbuf));
-		printf("Wrote!\n");
 	}
 }
