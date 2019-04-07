@@ -72,6 +72,7 @@ void contractor(const char * directory, const char * filename, Semaphore * my_se
 		
 
 	fclose(source);
+	/*
 	bool exit_message_received = false;
 	while(!exit_message_received){
 		messages_sem.wait();
@@ -83,6 +84,7 @@ void contractor(const char * directory, const char * filename, Semaphore * my_se
 		messages_sem.signal();
 	}
 	shared_mem.detach(sender_messages);
+	*/
 	my_sem->signal();
 	_exit(0);
 }

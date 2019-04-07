@@ -5,7 +5,6 @@
 class Socket{
 	private:
 		int sfd; //Socket File Descriptor
-
 	public:
 		Socket(char = 's', bool = false);
 		Socket(int);
