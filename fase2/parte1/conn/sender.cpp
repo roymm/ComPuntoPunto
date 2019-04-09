@@ -18,7 +18,6 @@ int main(int argc, char * argv[]){
 	Socket sock;
 	sock.Connect(argv[1], atoi(argv[2]));
 	printf("success\n");
-	int msg_no = 0;	
 	int result;
 
 	while(true){

@@ -34,9 +34,13 @@ void Message::send(struct my_msgbuf * buf){
 	}
 }
 
-void Message::receive(struct my_msgbuf * buf, long type){
-	int st = msgrcv(id, (void *) buf, bufsize, type, 0);
+int Message::receive(struct my_msgbuf * buf, long type, int no_wait){
+	int flag = no_wait == 0? 0 : IPC_NOWAIT;
+	int st = msgrcv(id, (void *) buf, bufsize, type, flag);
+	/*
 	if(-1 == st){
 		error_exit(errno, "Error recieving message\n");
 	}
+	*/
+	return st;
 }

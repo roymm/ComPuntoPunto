@@ -24,7 +24,7 @@ class Message{
 		Message(key_t = KEY_ASCH);
 		~Message();
 		void send(struct my_msgbuf *);
-		void receive(struct my_msgbuf *, long = 0);
+		int receive(struct my_msgbuf *, long = 0, int = 0);
 
 };
 
