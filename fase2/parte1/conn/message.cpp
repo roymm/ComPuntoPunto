@@ -9,7 +9,7 @@
 
 Message::Message(key_t key){
 	pid = getpid();	
-	id = msgget(key, IPC_CREAT|0600);
+	id = msgget(key, IPC_CREAT|0600); //Especificamos que queremos crear una cola de mensaje que tenga permisos de lectura y escritura sólo para el usuario dueño del proceso.
 	bufsize = sizeof(my_msgbuf) - sizeof(long);
 	if(-1 == id){
 		error_exit(errno, "Error creating message queue\n");
@@ -17,30 +17,24 @@ Message::Message(key_t key){
 }
 
 Message::~Message(){
-
 	if(getpid() == pid){
 		int st = msgctl(id, IPC_RMID, nullptr);
 		if(-1 == st){
 			error_exit(errno, "Error deleting message queue\n");
 		}
 	}
-
 }
 
 void Message::send(struct my_msgbuf * buf){
-	int st = msgsnd(id, (const void *) buf, bufsize, 0);
+	int st = msgsnd(id, (const void *) buf, bufsize, 0); //Con el último 0 indicamos que queremos que este llamado bloquee si la cola está llena
 	if(-1 == st){
 		error_exit(errno, "Error sending message\n");
 	}
 }
 
-int Message::receive(struct my_msgbuf * buf, long type, int no_wait){
-	int flag = no_wait == 0? 0 : IPC_NOWAIT;
-	int st = msgrcv(id, (void *) buf, bufsize, type, flag);
-	/*
+void Message::receive(struct my_msgbuf * buf, long type){
+	int st = msgrcv(id, (void *) buf, bufsize, type, 0); //Con el último 0 indicamos que queremos que este llamado bloquee si la cola está vacía 
 	if(-1 == st){
 		error_exit(errno, "Error recieving message\n");
 	}
-	*/
-	return st;
 }
