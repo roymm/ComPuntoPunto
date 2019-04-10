@@ -1,7 +1,6 @@
 #include "semaphore.h"
 #include "message.h"
 #include "error_handler.h"
-#include "shared.h"
 
 #include <cstdio>
 #include <cstring>
@@ -13,9 +12,16 @@
 #define MAX_PROCESSES 2
 #define SIZE 512
 
+/**
+	contractor	Procesa un archivo para enviarlo al emisor
+	"directory" es el directorio en el que se encuentran los archivos
+	"filename" 	es el nombre del archivo que se va a enviar
+	"my_sem" 		es el semaforo que se utiliza para que el lector no cree más procesos que los necesarios
+**/
+
 void contractor(const char * directory, const char * filename, Semaphore * my_sem){
-	Message in_queue; 		//Cola en la que se ponen los pedazos de archivo
-	Message out_queue(0xA0000); 		//Cola en la que se reciben los mensajes de confirmación
+	Message in_queue; 		//Cola en la que se ponen los pedazos de archivo para el emisor
+	Message out_queue(0xA0000); 		//Cola en la que se reciben los mensajes de confirmación del emisor
 	struct my_msgbuf buf;	//En este struct se pone el mensaje junto a su encabezado
 	char full_path[FILENAME_MAX]; //Aquí va la ruta del archivo + el nombre del archivo
 	strcat(full_path, directory); 
@@ -73,30 +79,34 @@ void contractor(const char * directory, const char * filename, Semaphore * my_se
 	_exit(0);
 }
 
+/**
+	lector	Toma los archivos regulares de un directorio y se los pasa a los contratistas
+	argv[1] Ruta el directorio
+**/
 int main(int argc, char * argv[]){
 	if(argc < 2){
 		printf("Missing arguments!\n");
 		return 1;
 	}
-	Semaphore my_sem(0xb40703, MAX_PROCESSES);
-	DIR * dir = opendir(argv[1]);
+	Semaphore my_sem(0xb40703, MAX_PROCESSES); //Este semaforo evita que el lector cree más procesos que el máximo (por default 2)
+	DIR * dir = opendir(argv[1]); //dir representa al directorio que recibimos
 	if(!dir){
 		error_exit(errno, "Cannot open directory");
 	}
-	struct dirent * entry = NULL; 
+	struct dirent * entry = NULL;  //Dirent representa una entrada en el directorio (puede ser otro directorio, un archivo, un device, etc)
 	int status = 0;
 	int forked_processes = 0;
-	while((entry = readdir(dir))){
-		if(entry->d_type == (DT_REG) && entry->d_name[0] != '.'){
-			my_sem.wait();
+	while((entry = readdir(dir))){ //Recorremos el directorio entrada por entrada
+		if(entry->d_type == (DT_REG) && entry->d_name[0] != '.'){ //Aquí filtramos todas las cosas que no sean archivos regulares que no estén escondidos
+			my_sem.wait(); //Señalamos que vamos a crear un proceso
 			if(!fork()){
-				contractor(argv[1], (const char *) entry->d_name, &my_sem);
+				contractor(argv[1], (const char *) entry->d_name, &my_sem); //Si es el hijo, se va a trabajar como contratista.
 			}else{
-				++forked_processes;
+				++forked_processes; //Si es el padre, apunte el número de hijos que ha tenido.
 			}
 		}
 	}
-	for(int zombies = 0; zombies < forked_processes; ++zombies)
-		wait(&status);
+	for(int zombies = 0; zombies < forked_processes; ++zombies) //Aquí revisamos que todos los hijos que creamos hayan muerto (ya que puede que el while anterior
+		wait(&status);																						//termine antes de que los contratistas lo hayan terminado.
 	closedir(dir);
 }
