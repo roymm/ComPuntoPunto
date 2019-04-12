@@ -32,7 +32,7 @@ int Socket::Connect(const char * host, int port){
 	int status;
 	struct sockaddr_in client_addr;
 	struct in_addr addr;
-	if(inet_aton(host, &addr) == -1){
+	if(inet_aton(host, &addr) == 0){
 		error_exit(errno, "Error parsing the IP address socket\n");
 	}
 	client_addr.sin_addr = addr;
@@ -68,7 +68,7 @@ int Socket::Listen(int queue){
 	return status;
 }
 
-int Socket::Bind(int port){
+int Socket::Bind(long port){
 	int status;
 	struct sockaddr_in server_addr;
 	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);

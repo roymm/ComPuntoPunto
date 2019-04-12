@@ -13,7 +13,7 @@ class Socket{
 		int Read(char *, int);
 		int Write(const char *, int);
 		int Listen(int = SOMAXCONN);
-		int Bind(int);
+		int Bind(long);
 		Socket * Accept();
 		int Shutdown(int);
 		int Close();
