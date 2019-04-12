@@ -1,0 +1,7 @@
+Para correr todo el sistema se necesita:
+
+1. Correr make.
+2. Opcionalmente, mover el receiver a una carpeta aparte, ya que los archivos aparecerán en donde esté el receiver.
+3. Correr el receiver (en otra máquina, posiblemente), con un puerto como argumento (receiver tiene un puerto default, 2909)
+4. Correr el sender, con la IP y el puerto del receiver
+5. Correr el reader (en la misma máquina en donde está corriendo el sender) con la carpeta en la que están los archivos que se desean pasar, y opcionalmente el número máximo de procesos que se desean manejar.
